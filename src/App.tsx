@@ -1,5 +1,5 @@
-import Canvas from './Components/Canvas';
 import { Routes, Route } from 'react-router-dom';
+import Canvas from './Components/Canvas';
 import './App.css';
 
 function App() {
