@@ -1,20 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
-import Modal from './Modal';
-import rectangleIcon from '../assets/Icons/rectangle.png';
-import circleIcon from '../assets/Icons/circle.png';
-import lineIcon from '../assets/Icons/line.png';
-import textIcon from '../assets/Icons/text.png';
-import fillColorIcon from '../assets/Icons/fill-color.png';
-import borderColorIcon from '../assets/Icons/crayon.png';
+import { useState, useEffect, useRef } from "react";
+import Modal from "./Modal";
+import rectangleIcon from "../assets/Icons/rectangle.png";
+import circleIcon from "../assets/Icons/circle.png";
+import lineIcon from "../assets/Icons/line.png";
+import textIcon from "../assets/Icons/text.png";
+import fillColorIcon from "../assets/Icons/fill-color.png";
+import borderColorIcon from "../assets/Icons/crayon.png";
 
 function Canvas() {
+  const [styles, setStyles] = useState({
+    fillColor: "#000",
+    borderColor: "#000",
+    borderWidth: 1,
+  });
   const [modalShow, setModalShow] = useState(false);
-  const [styles, setStyles] = useState({ fillColor: '#000', borderColor: '#000', borderWidth: 1 });
-  const [toolInputs, setToolInputs] = useState({ type: '', details: [{ label: '', type: '' }] });
-  const [currentTool, setCurrentTool] = useState('');
+  const [toolInputs, setToolInputs] = useState({
+    type: "",
+    details: [{ label: "", type: "" }],
+  });
+  const [currentTool, setCurrentTool] = useState("");
 
-  let canvasRef = useRef<HTMLCanvasElement>(null);
-  let ctxRef = useRef<any>(null);
   let borderColorInputRef = useRef<HTMLInputElement>(null);
   let fillColorInputRef = useRef<HTMLInputElement>(null);
 
@@ -22,103 +27,125 @@ function Canvas() {
   let startY: number = 0;
   let endX: number = 0;
   let endY: number = 0;
-  let isMouseDown = false;
+  let draw = false;
 
+  // Try to replace it with some window load or resize event
   useEffect(() => {
-    if (canvasRef?.current) {
-      const canvas: any = canvasRef.current;
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-      canvas.style.width = '85vw';
-      canvas.style.height = '75vh';
-      // canvas.offsetHeight = 0;
-      // canvas.offsetLeft = 0;
-      // canvas.offsetParent = 0;
-      // canvas.offsetTop = 0;
-      // canvas.offsetWidth = 0;
-      ctxRef.current = canvas.getContext('2d');
-
-      console.log(canvas);
-      console.log(ctxRef.current);
-    }
+    ctx.canvas.width = (window.innerWidth * 85) / 100;
+    ctx.canvas.height = (window.innerHeight * 75) / 100;
   }, []);
 
   const handleColorIconClick = (styleType: string) => {
-    if (styleType === 'fill') {
+    if (styleType === "fill") {
       let fillColorInput = fillColorInputRef.current;
       fillColorInput?.click();
-    } else if (styleType === 'border') {
+    } else if (styleType === "border") {
       let borderColorInput = borderColorInputRef.current;
       borderColorInput?.click();
     }
   };
 
   const handleColorInputChange = (e: any, styleType: string) => {
-    if (styleType === 'fill') {
+    if (styleType === "fill") {
       setStyles({ ...styles, fillColor: e.target.value });
-    } else if (styleType === 'border') {
+    } else if (styleType === "border") {
       setStyles({ ...styles, borderColor: e.target.value });
     }
   };
 
-  const handleMouseDown = (event: any) => {
-    isMouseDown = true;
-    const canvas = canvasRef?.current;
+  const handleToolClick = (tool: string) => {
+    if (tool === currentTool) {
+      setCurrentTool("");
+      return;
+    }
+    setCurrentTool(tool);
+  };
+
+  const getPosition = (event: any) => {
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    let x = 0;
+    let y = 0;
     if (canvas?.offsetLeft) {
-      startX = event.clientX - canvas.offsetLeft;
+      x = event.clientX - canvas.offsetLeft;
     }
     if (canvas?.offsetTop) {
-      startY = event.clientY - canvas.offsetTop;
+      y = event.clientY - canvas.offsetTop;
     }
+
+    return [x, y];
+  };
+
+  const clearRectangle = (
+    x: number,
+    y: number,
+    x1: number,
+    y1: number,
+    ctx: CanvasRenderingContext2D
+  ) => {
+    let startX = Math.min(x, x1);
+    let startY = Math.min(y, y1);
+    let width = Math.abs(x1 - x);
+    let height = Math.abs(y1 - y);
+
+    // It is erasing anything below it, look into that
+    ctx.clearRect(startX, startY, width, height);
+    ctx.strokeStyle = "#fff";
+    ctx.strokeRect(startX, startY, width, height);
+    ctx.strokeStyle = styles.borderColor;
+  };
+
+  const handleMouseDown = (event: any) => {
+    draw = true;
+    [startX, startY] = getPosition(event);
+    endX = startX;
+    endY = startY;
   };
 
   const handleMouseMove = (event: any) => {
-    const canvas = canvasRef.current;
-    const ctx = ctxRef.current;
+    if (!draw) return;
 
-    let prevEndX = endX;
-    let prevEndY = endY;
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-    if (canvas?.offsetLeft) {
-      endX = event.clientX - canvas.offsetLeft;
-    }
-    if (canvas?.offsetTop) {
-      endY = event.clientY - canvas.offsetTop;
-    }
+    ctx.strokeStyle = styles.borderColor;
+    ctx.fillStyle = styles.fillColor;
+    // With lineWidth 5 clear not working
+    ctx.lineWidth = 6;
 
-    if (isMouseDown) {
-      console.log(startX, startY, prevEndX, prevEndY, endX, endY);
-      console.log(ctxRef.current);
-      console.log(currentTool);
-
-      if (currentTool === 'rect') {
+    if (draw) {
+      if (currentTool === "rect") {
         // Clear previous rectangles
-        // Put some condition here
-        var width = prevEndX - startX;
-        var height = prevEndY - startY;
-        console.log(startX, startY, width, height);
-        console.log(ctx);
-        ctx.clearRect(startX, startY, width, height);
+        // Put some condition here for the first event call
+        clearRectangle(startX, startY, endX, endY, ctx);
 
-        var width = endX - startX;
-        var height = endY - startY;
-        console.log(startX, startY, endX, endY);
-        ctx.strokeStyle = styles.borderColor;
-        ctx.fillStyle = styles.fillColor;
-        ctx.lineWidth = 2;
+        [endX, endY] = getPosition(event);
+
+        let width = endX - startX;
+        let height = endY - startY;
+
         ctx.strokeRect(startX, startY, width, height);
         ctx.fillRect(startX, startY, width, height);
-      } else if (currentTool === 'line') {
-        ctxRef.current.beginPath();
-        ctxRef.current.moveTo(startX, startY);
-        ctxRef.current.lineTo(endX, endY);
-        ctxRef.current.stroke();
+      } else if (currentTool === "line") {
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+      } else {
+        ctx.moveTo(endX, endY);
+        [endX, endY] = getPosition(event);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
       }
     }
   };
 
-  const handleMouseUp = (event: any) => {
+  // Add these function to windows mouse up event because if you take the cursor out of the canvas and then do mouse up and then take bake the cursor back to the canvas then still it will draw
+  const handleMouseUp = () => {
     // Store all the shapes
-    isMouseDown = false;
+    draw = false;
   };
 
   const showModal = () => {
@@ -130,14 +157,14 @@ function Canvas() {
   };
 
   const handleTextClick = () => {
-    setCurrentTool('text');
+    handleToolClick("text");
     let obj = {
-      type: 'text',
+      type: "text",
       details: [
-        { name: 't', label: 'Text', type: 'text' },
-        { name: 'x', label: 'X-coordinate', type: 'number' },
-        { name: 'y', label: 'Y-coordinate', type: 'number' },
-        { name: 'fs', label: 'Font size', type: 'number' },
+        { name: "t", label: "Text", type: "text" },
+        { name: "x", label: "X-coordinate", type: "number" },
+        { name: "y", label: "Y-coordinate", type: "number" },
+        { name: "fs", label: "Font size", type: "number" },
       ],
     };
 
@@ -145,30 +172,38 @@ function Canvas() {
     showModal();
   };
 
-  const drawElements = () => {};
-  // const drawElements = (obj: any) => {
-  //   console.log(obj);
-  //   console.log(ctxRef.current);
-  //   if (obj.type === 'rect') {
-  //     ctxRef.current.fillStyle = obj.details.fc || '#000';
-  //     ctxRef.current.strokeStyle = obj.details.bc || '#000';
-  //     ctxRef.current.lineWidth = obj.details.bw || 1;
-  //     ctxRef.current.strokeRect(obj.details.x || 0, obj.details.y || 0, obj.details.w, obj.details.h);
-  //     ctxRef.current.fillRect(obj.details.x || 0, obj.details.y || 0, obj.details.w, obj.details.h);
-  //   } else if (obj.type === 'line') {
-  //     ctxRef.current.beginPath();
-  //     ctxRef.current.moveTo(obj.details.sx || 0, obj.details.sy || 0);
-  //     ctxRef.current.lineTo(obj.details.ex || 0, obj.details.ey || 0);
-  //     ctxRef.current.strokeStyle = obj.details.lc || '#000';
-  //     ctxRef.current.lineWidth = obj.details.lw || 1;
-  //     ctxRef.current.stroke();
-  //   } else if (obj.type === 'text') {
-  //     ctxRef.current.font = `${obj.details.fs || 14}px Arial`;
-  //     ctxRef.current.fillText(obj.details.t || '', obj.details.x || 0, obj.details.y || 0);
-  //   }
+  const drawElements = (obj: any) => {
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-  //   ctxRef.current.save();
-  // };
+    if (obj.type === "rect") {
+      ctx.fillStyle = obj.details.fc || "#000";
+      ctx.strokeStyle = obj.details.bc || "#000";
+      ctx.lineWidth = obj.details.bw || 1;
+      ctx.strokeRect(
+        obj.details.x || 0,
+        obj.details.y || 0,
+        obj.details.w,
+        obj.details.h
+      );
+      ctx.fillRect(
+        obj.details.x || 0,
+        obj.details.y || 0,
+        obj.details.w,
+        obj.details.h
+      );
+    } else if (obj.type === "line") {
+      ctx.beginPath();
+      ctx.moveTo(obj.details.sx || 0, obj.details.sy || 0);
+      ctx.lineTo(obj.details.ex || 0, obj.details.ey || 0);
+      ctx.strokeStyle = obj.details.lc || "#000";
+      ctx.lineWidth = obj.details.lw || 1;
+      ctx.stroke();
+    } else if (obj.type === "text") {
+      ctx.font = `${obj.details.fs || 14}px Arial`;
+      ctx.fillText(obj.details.t || "", obj.details.x || 0, obj.details.y || 0);
+    }
+  };
 
   return (
     <div className="jam-board">
@@ -179,23 +214,35 @@ function Canvas() {
           <div></div>
           <div className="tool-bar-section">
             <div className="tool-bar-btns">
-              <img src={borderColorIcon} onClick={() => handleColorIconClick('border')} />
-              <div className="color-tab" style={{ backgroundColor: styles.borderColor }}></div>
+              <img
+                src={borderColorIcon}
+                onClick={() => handleColorIconClick("border")}
+              />
+              <div
+                className="color-tab"
+                style={{ backgroundColor: styles.borderColor }}
+              ></div>
               <input
                 type="color"
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
                 ref={borderColorInputRef}
-                onChange={(e) => handleColorInputChange(e, 'border')}
+                onChange={(e) => handleColorInputChange(e, "border")}
               />
             </div>
             <div className="tool-bar-btns">
-              <img src={fillColorIcon} onClick={() => handleColorIconClick('fill')} />
-              <div className="color-tab" style={{ backgroundColor: styles.fillColor }}></div>
+              <img
+                src={fillColorIcon}
+                onClick={() => handleColorIconClick("fill")}
+              />
+              <div
+                className="color-tab"
+                style={{ backgroundColor: styles.fillColor }}
+              ></div>
               <input
                 type="color"
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
                 ref={fillColorInputRef}
-                onChange={(e) => handleColorInputChange(e, 'fill')}
+                onChange={(e) => handleColorInputChange(e, "fill")}
               />
             </div>
             <div className="tool-bar-btns">{/* <img src={} /> */}</div>
@@ -204,8 +251,7 @@ function Canvas() {
       </header>
       <main>
         <canvas
-          className="canvas"
-          ref={canvasRef}
+          id="canvas"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -214,32 +260,45 @@ function Canvas() {
         </canvas>
         <div className="side-bar">
           <div
-            className={`${currentTool === 'rect' ? 'clicked' : null} side-bar-btns`}
-            onClick={() => setCurrentTool('rect')}
+            className={`${
+              currentTool === "rect" ? "clicked" : null
+            } side-bar-btns`}
+            onClick={() => handleToolClick("rect")}
           >
             <img src={rectangleIcon} />
           </div>
           <div
-            className={`${currentTool === 'line' ? 'clicked' : null} side-bar-btns`}
-            onClick={() => setCurrentTool('line')}
+            className={`${
+              currentTool === "line" ? "clicked" : null
+            } side-bar-btns`}
+            onClick={() => handleToolClick("line")}
           >
             <img src={lineIcon} />
           </div>
           <div
-            className={`${currentTool === 'circle' ? 'clicked' : null} side-bar-btns`}
-            onClick={() => setCurrentTool('circle')}
+            className={`${
+              currentTool === "circle" ? "clicked" : null
+            } side-bar-btns`}
+            onClick={() => handleToolClick("circle")}
           >
             <img src={circleIcon} />
           </div>
           <div
-            className={`${currentTool === 'text' ? 'clicked' : null} side-bar-btns`}
+            className={`${
+              currentTool === "text" ? "clicked" : null
+            } side-bar-btns`}
             onClick={() => handleTextClick()}
           >
             <img src={textIcon} />
           </div>
         </div>
       </main>
-      <Modal showModal={modalShow} onClose={hideModal} toolInputs={toolInputs} draw={drawElements} />
+      <Modal
+        showModal={modalShow}
+        onClose={hideModal}
+        toolInputs={toolInputs}
+        draw={drawElements}
+      />
     </div>
   );
 }
