@@ -6,6 +6,7 @@ import lineIcon from "../assets/Icons/line.png";
 import textIcon from "../assets/Icons/text.png";
 import fillColorIcon from "../assets/Icons/fill-color.png";
 import borderColorIcon from "../assets/Icons/crayon.png";
+import drawingBoard from "../assets/Icons/drawing-board-24.png";
 
 function Canvas() {
   const [styles, setStyles] = useState({
@@ -34,8 +35,8 @@ function Canvas() {
     const canvas = document.getElementById("canvas") as HTMLCanvasElement;
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-    ctx.canvas.width = (window.innerWidth * 85) / 100;
-    ctx.canvas.height = (window.innerHeight * 75) / 100;
+    ctx.canvas.width = (window.innerWidth * 90) / 100;
+    ctx.canvas.height = (window.innerHeight * 80) / 100;
   }, []);
 
   const handleColorIconClick = (styleType: string) => {
@@ -112,8 +113,7 @@ function Canvas() {
 
     ctx.strokeStyle = styles.borderColor;
     ctx.fillStyle = styles.fillColor;
-    // With lineWidth 5 clear not working
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 8; // With lineWidth 5 clear rectangle not working
 
     if (draw) {
       if (currentTool === "rect") {
@@ -129,8 +129,19 @@ function Canvas() {
         ctx.strokeRect(startX, startY, width, height);
         ctx.fillRect(startX, startY, width, height);
       } else if (currentTool === "line") {
+        // Clear previous lines
         ctx.beginPath();
         ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 10;
+        ctx.stroke();
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = styles.borderColor;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        [endX, endY] = getPosition(event);
         ctx.lineTo(endX, endY);
         ctx.stroke();
       } else {
@@ -208,7 +219,10 @@ function Canvas() {
   return (
     <div className="jam-board">
       <header>
-        <h1>Canvas</h1>
+        <div className="jam-board-header">
+          <img src={drawingBoard} alt="Drawing Board" />
+          <p>Canvas</p>
+        </div>
         <div className="tool-bar">
           <div></div>
           <div></div>
@@ -250,14 +264,6 @@ function Canvas() {
         </div>
       </header>
       <main>
-        <canvas
-          id="canvas"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-        >
-          Use a Modern Browser which supports Canvas
-        </canvas>
         <div className="side-bar">
           <div
             className={`${
@@ -292,6 +298,14 @@ function Canvas() {
             <img src={textIcon} />
           </div>
         </div>
+        <canvas
+          id="canvas"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+        >
+          Use a Modern Browser which supports Canvas
+        </canvas>
       </main>
       <Modal
         showModal={modalShow}
